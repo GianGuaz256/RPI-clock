@@ -1,0 +1,67 @@
+# Raspberry Pi Dashboard - Git Ignore File
+
+# Environment variables (contains sensitive API keys)
+.env
+
+# Google Calendar OAuth credentials and tokens
+credentials.json
+token.json
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.backup
+*.bak
+config.json.backup
+
+# Temporary files
+tmp/
+temp/
+*.tmp 

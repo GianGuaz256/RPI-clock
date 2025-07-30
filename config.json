@@ -1,0 +1,16 @@
+{
+  "weather": {
+    "api_key": "YOUR_OPENWEATHERMAP_API_KEY_HERE",
+    "city": "London,UK",
+    "units": "metric"
+  },
+  "display": {
+    "brightness": 100,
+    "timeout": 0
+  },
+  "google_calendar": {
+    "credentials_file": "credentials.json",
+    "token_file": "token.json",
+    "scopes": ["https://www.googleapis.com/auth/calendar.readonly"]
+  }
+} 
