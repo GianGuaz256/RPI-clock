@@ -12,5 +12,10 @@
     "credentials_file": "credentials.json",
     "token_file": "token.json",
     "scopes": ["https://www.googleapis.com/auth/calendar.readonly"]
+  },
+  "app": {
+    "auto_swipe_enabled": true,
+    "auto_swipe_interval": 15,
+    "debug_mode": false
   }
 } 

@@ -59,6 +59,8 @@ class DashboardApp:
         self.running = True
         self.current_screen_index = 0
         self.last_api_update = 0
+        self.last_auto_swipe = time.time()  # Track auto swipe timing
+        self.user_interaction_time = time.time()  # Track user interactions
         
         # Start background update thread
         self._start_background_updates()
@@ -88,6 +90,8 @@ class DashboardApp:
         print(f"  Swipe threshold: {self.runtime_config['SWIPE_THRESHOLD']}px")
         print(f"  API update interval: {self.runtime_config['UPDATE_INTERVAL']}s")
         print(f"  System update interval: {self.runtime_config['SYSTEM_UPDATE_INTERVAL']}s")
+        print(f"  Auto swipe enabled: {self.runtime_config['AUTO_SWIPE_ENABLED']}")
+        print(f"  Auto swipe interval: {self.runtime_config['AUTO_SWIPE_INTERVAL']}s")
         print(f"  Debug mode: {self.runtime_config['DEBUG_MODE']}")
         
         # Show warnings
@@ -297,12 +301,14 @@ class DashboardApp:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button (touch start)
                     self.touch_handler.handle_touch_start(event.pos)
+                    self._reset_auto_swipe_timer()  # Reset auto swipe on user interaction
             
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:  # Left mouse button (touch end)
                     swipe = self.touch_handler.handle_touch_end(event.pos)
                     if swipe:
                         self._handle_swipe(swipe)
+                        self._reset_auto_swipe_timer()  # Reset auto swipe on manual swipe
         
         return True
     
@@ -322,9 +328,11 @@ class DashboardApp:
         elif event.key == pygame.K_LEFT:
             # Navigate to previous screen
             self.previous_screen()
+            self._reset_auto_swipe_timer()  # Reset auto swipe on manual navigation
         elif event.key == pygame.K_RIGHT:
             # Navigate to next screen
             self.next_screen()
+            self._reset_auto_swipe_timer()  # Reset auto swipe on manual navigation
         elif event.key == pygame.K_r:
             # Force refresh current screen data
             self._force_refresh_current_screen()
@@ -424,11 +432,47 @@ class DashboardApp:
         
         print("="*40)
     
+    def _reset_auto_swipe_timer(self) -> None:
+        """Reset the auto swipe timer due to user interaction."""
+        self.user_interaction_time = time.time()
+        if self.runtime_config['DEBUG_MODE']:
+            print("Auto swipe timer reset due to user interaction")
+    
+    def _handle_auto_swipe(self) -> None:
+        """Handle automatic screen switching if enabled."""
+        if not self.runtime_config['AUTO_SWIPE_ENABLED']:
+            return
+        
+        if len(self.screens) <= 1:
+            return  # No point in auto swipe with only one screen
+        
+        current_time = time.time()
+        auto_swipe_interval = self.runtime_config['AUTO_SWIPE_INTERVAL']
+        
+        # Check if enough time has passed since last auto swipe
+        time_since_last_swipe = current_time - self.last_auto_swipe
+        time_since_user_interaction = current_time - self.user_interaction_time
+        
+        # Only auto swipe if:
+        # 1. Enough time has passed since last auto swipe
+        # 2. Enough time has passed since last user interaction (grace period)
+        if (time_since_last_swipe >= auto_swipe_interval and 
+            time_since_user_interaction >= 3):  # 3 second grace period after user interaction
+            
+            if self.runtime_config['DEBUG_MODE']:
+                print(f"Auto swiping to next screen after {auto_swipe_interval}s")
+            
+            self.next_screen()
+            self.last_auto_swipe = current_time
+    
     def update(self) -> None:
         """Update the current screen and application state."""
         if self.screens:
             current_screen = self.screens[self.current_screen_index]
             current_screen.update()
+            
+        # Handle auto swipe functionality
+        self._handle_auto_swipe()
     
     def draw(self) -> None:
         """Draw the current screen and UI elements."""

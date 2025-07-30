@@ -14,6 +14,7 @@ DEFAULT_SWIPE_THRESHOLD = 100
 DEFAULT_UPDATE_INTERVAL = 300  # 5 minutes for API data
 DEFAULT_CLOCK_UPDATE_INTERVAL = 1  # 1 second for clock updates
 DEFAULT_SYSTEM_UPDATE_INTERVAL = 5  # 5 seconds for system stats
+DEFAULT_AUTO_SWIPE_INTERVAL = 10  # 10 seconds for auto screen switching
 
 # Colors (RGB tuples) - these remain constant
 BLACK = (0, 0, 0)
@@ -45,7 +46,15 @@ STATUS_COLORS = {
 API_ENDPOINTS = {
     'bitcoin_price': 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
     'blockchain_info': 'https://blockchain.info/latestblock',
-    'weather': 'https://api.openweathermap.org/data/2.5/weather'
+    'weather': 'https://api.openweathermap.org/data/2.5/weather',
+    # Mempool.space API endpoints for comprehensive Bitcoin data
+    'mempool_price': 'https://mempool.space/api/v1/prices',
+    'mempool_difficulty': 'https://mempool.space/api/v1/difficulty-adjustment',
+    'mempool_fees': 'https://mempool.space/api/v1/fees/recommended',
+    'mempool_hashrate': 'https://mempool.space/api/v1/mining/hashrate/3d',
+    'mempool_blocks': 'https://mempool.space/api/v1/blocks',
+    'mempool_mempool': 'https://mempool.space/api/mempool',
+    'mempool_lightning': 'https://mempool.space/api/v1/lightning/statistics/latest'
 }
 
 # Weather Icons Mapping - these remain constant
@@ -111,6 +120,8 @@ def get_runtime_constants(config_manager):
         'UPDATE_INTERVAL': config_manager.get('app.api_update_interval', DEFAULT_UPDATE_INTERVAL),
         'CLOCK_UPDATE_INTERVAL': DEFAULT_CLOCK_UPDATE_INTERVAL,  # This stays at 1 second
         'SYSTEM_UPDATE_INTERVAL': config_manager.get('app.system_update_interval', DEFAULT_SYSTEM_UPDATE_INTERVAL),
+        'AUTO_SWIPE_ENABLED': config_manager.get('app.auto_swipe_enabled', False),
+        'AUTO_SWIPE_INTERVAL': config_manager.get('app.auto_swipe_interval', DEFAULT_AUTO_SWIPE_INTERVAL),
         'DEBUG_MODE': config_manager.get('app.debug_mode', False),
         'LOG_LEVEL': config_manager.get('app.log_level', 'INFO')
     } 
