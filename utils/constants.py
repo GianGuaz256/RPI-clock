@@ -56,9 +56,43 @@ WEATHER_ICONS = {
     'Drizzle': '🌦️',
     'Thunderstorm': '⛈️',
     'Snow': '❄️',
-    'Mist': '🌫️',
-    'Fog': '🌫️'
+    'Mist': '��️',
+    'Fog': '🌫️',
+    'Partly Cloudy': '⛅',
+    'Overcast': '☁️'
 }
+
+# Mock Weather Data for testing without API keys
+MOCK_WEATHER_DATA = [
+    {
+        'condition': 'Clear',
+        'temperature': 22.5,
+        'humidity': 45,
+        'wind_speed': 2.1,
+        'description': 'Sunny and clear'
+    },
+    {
+        'condition': 'Partly Cloudy',
+        'temperature': 19.8,
+        'humidity': 65,
+        'wind_speed': 3.2,
+        'description': 'Partly cloudy with light breeze'
+    },
+    {
+        'condition': 'Clouds',
+        'temperature': 16.4,
+        'humidity': 78,
+        'wind_speed': 4.5,
+        'description': 'Cloudy with moderate wind'
+    },
+    {
+        'condition': 'Rain',
+        'temperature': 15.2,
+        'humidity': 85,
+        'wind_speed': 5.8,
+        'description': 'Light rain showers'
+    }
+]
 
 def get_runtime_constants(config_manager):
     """

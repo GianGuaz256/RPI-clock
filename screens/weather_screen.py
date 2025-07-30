@@ -1,262 +1,160 @@
 """
-Weather information screen for the Raspberry Pi Dashboard.
+Weather display screen showing current conditions.
 """
 
-from typing import Dict, Any
+from typing import Tuple
+import pygame
 from screens.base_screen import BaseScreen
 from api.weather_api import WeatherAPIManager
-from utils.constants import WHITE, GREEN, GRAY, RED, SCREEN_WIDTH
+from utils.constants import FONT_LARGE, FONT_MEDIUM, FONT_SMALL, WHITE, BLUE, GREEN, GRAY
 
 
 class WeatherScreen(BaseScreen):
-    """Display current weather conditions and forecast."""
+    """Screen displaying current weather conditions."""
     
     def __init__(self, app):
         """
         Initialize weather screen.
         
         Args:
-            app: Reference to main application instance
+            app: Main application instance
         """
         super().__init__(app)
-        self.weather_manager = WeatherAPIManager(app.config_manager)
+        self.weather_api = WeatherAPIManager(app.config_manager)
     
-    def update(self) -> None:
-        """Update weather data (data is updated via background thread)."""
-        # Data is updated automatically by the API manager's caching system
-        pass
+    def update(self):
+        """Update weather data."""
+        self.weather_api.update()
     
-    def draw(self, screen) -> None:
+    def draw(self, screen: pygame.Surface):
         """
-        Draw weather information screen.
+        Draw weather information on screen.
         
         Args:
             screen: Pygame surface to draw on
         """
-        screen.fill((0, 0, 0))  # Black background
+        # Clear screen
+        screen.fill((0, 0, 0))
         
-        # Get weather data
-        weather_data = self.weather_manager.get_data()
-        status = weather_data.get('status', 'unknown')
-        
-        # Draw title (city name if available)
-        city = weather_data.get('city', 'Weather')
-        self.draw_title(screen, city, 30)
-        
-        if status in ['success', 'cached']:
-            self._draw_weather_data(screen, weather_data)
-        else:
-            self._draw_error_state(screen, weather_data)
-        
-        # Draw status indicator
-        self.draw_status_indicator(screen, status, (450, 20))
-    
-    def _draw_weather_data(self, screen, data: Dict[str, Any]) -> None:
-        """
-        Draw weather conditions and information.
-        
-        Args:
-            screen: Pygame surface to draw on
-            data: Weather data dictionary
-        """
-        # Weather icon and condition
-        icon = data.get('icon', '🌤️')
-        condition = data.get('condition', 'Unknown')
-        
-        # Draw weather icon (large)
         try:
-            # Try to render the emoji icon
-            icon_surface = self.font_large.render(icon, True, WHITE)
-            icon_rect = icon_surface.get_rect(center=(SCREEN_WIDTH // 2 - 60, 85))
-            screen.blit(icon_surface, icon_rect)
-        except:
-            # Fallback if emoji rendering fails
-            self.draw_text(screen, "☀", (SCREEN_WIDTH // 2 - 60, 85), 
-                          self.font_large, WHITE, center=True)
-        
-        # Draw condition
-        self.draw_text(screen, condition, (SCREEN_WIDTH // 2, 125), 
-                      self.font_medium, WHITE, center=True)
-        
-        # Temperature (large, prominent)
-        temp = data.get('temperature', 0)
-        units = data.get('units', 'metric')
-        temp_unit = '°C' if units == 'metric' else '°F'
-        temp_text = f"{temp:.1f}{temp_unit}"
-        
-        self.draw_text(screen, temp_text, (SCREEN_WIDTH // 2, 170), 
-                      self.font_large, WHITE, center=True)
-        
-        # Additional weather information
-        self._draw_weather_details(screen, data)
-        
-        # Location and time info
-        self._draw_location_info(screen, data)
+            # Get weather data
+            data = self.weather_api.get_data()
+            if not data:
+                self.draw_error_message(screen, "No weather data available")
+                return
+            
+            y_offset = 30
+            
+            # Title with data source indicator
+            data_source = self.weather_api.get_data_source_info()
+            title = f"Weather - {data_source}"
+            self.draw_title(screen, title, y_offset, size=FONT_SMALL)
+            y_offset += 40
+            
+            # Location
+            city = data.get('city', 'Unknown')
+            country = data.get('country', '')
+            location = f"{city}, {country}" if country else city
+            self.draw_text(screen, location, FONT_MEDIUM, WHITE, 
+                          (self.screen_width // 2, y_offset), center=True)
+            y_offset += 45
+            
+            # Main temperature and icon
+            temp = self.weather_api.get_formatted_temperature()
+            icon = self.weather_api.get_icon()
+            temp_text = f"{icon} {temp}"
+            self.draw_text(screen, temp_text, FONT_LARGE, WHITE,
+                          (self.screen_width // 2, y_offset), center=True)
+            y_offset += 60
+            
+            # Weather condition
+            condition = self.weather_api.get_condition()
+            self.draw_text(screen, condition, FONT_MEDIUM, BLUE,
+                          (self.screen_width // 2, y_offset), center=True)
+            y_offset += 40
+            
+            # Additional details in two columns
+            self._draw_weather_details(screen, data, y_offset)
+            
+            # Status indicator
+            self._draw_status_indicator(screen)
+            
+        except Exception as e:
+            error_msg = f"Weather error: {str(e)}"
+            self.draw_error_message(screen, error_msg)
     
-    def _draw_weather_details(self, screen, data: Dict[str, Any]) -> None:
+    def _draw_weather_details(self, screen: pygame.Surface, data: dict, y_offset: int):
         """
-        Draw detailed weather information.
+        Draw detailed weather information in two columns.
         
         Args:
             screen: Pygame surface to draw on
             data: Weather data dictionary
+            y_offset: Vertical offset to start drawing
         """
-        y_offset = 220
+        # Left column
+        left_x = 80
+        right_x = 320
         
         # Humidity
         humidity = data.get('humidity', 0)
-        self.draw_text(screen, f"Humidity: {humidity}%", (20, y_offset), 
-                      self.font_small, WHITE)
+        self.draw_text(screen, f"Humidity: {humidity}%", FONT_SMALL, WHITE,
+                      (left_x, y_offset))
         
-        # Wind information
-        wind_info = self._get_wind_info(data)
-        self.draw_text(screen, f"Wind: {wind_info}", (20, y_offset + 20), 
-                      self.font_small, WHITE)
+        # Wind
+        wind_info = self.weather_api.get_wind_info()
+        wind_text = f"Wind: {wind_info['speed_formatted']}"
+        self.draw_text(screen, wind_text, FONT_SMALL, WHITE,
+                      (right_x, y_offset))
         
-        # Pressure (if available)
+        y_offset += 30
+        
+        # Pressure
         pressure = data.get('pressure', 0)
         if pressure > 0:
-            self.draw_text(screen, f"Pressure: {pressure} hPa", (20, y_offset + 40), 
-                          self.font_small, WHITE)
+            self.draw_text(screen, f"Pressure: {pressure} hPa", FONT_SMALL, WHITE,
+                          (left_x, y_offset))
         
-        # Visibility (if available)
+        # Visibility
         visibility = data.get('visibility', 0)
         if visibility > 0:
-            self.draw_text(screen, f"Visibility: {visibility:.1f} km", (250, y_offset), 
-                          self.font_small, WHITE)
+            self.draw_text(screen, f"Visibility: {visibility:.1f} km", FONT_SMALL, WHITE,
+                          (right_x, y_offset))
     
-    def _get_wind_info(self, data: Dict[str, Any]) -> str:
+    def _draw_status_indicator(self, screen: pygame.Surface):
         """
-        Format wind information string.
-        
-        Args:
-            data: Weather data dictionary
-            
-        Returns:
-            Formatted wind information string
-        """
-        wind_speed = data.get('wind_speed', 0)
-        wind_direction = data.get('wind_direction', 0)
-        units = data.get('units', 'metric')
-        
-        # Format speed with appropriate units
-        speed_unit = 'm/s' if units == 'metric' else 'mph'
-        speed_text = f"{wind_speed:.1f} {speed_unit}"
-        
-        # Convert wind direction to compass direction
-        direction = self._degrees_to_compass(wind_direction)
-        
-        return f"{speed_text} {direction}"
-    
-    def _degrees_to_compass(self, degrees: float) -> str:
-        """
-        Convert wind direction degrees to compass direction.
-        
-        Args:
-            degrees: Wind direction in degrees
-            
-        Returns:
-            Compass direction string
-        """
-        directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-                     "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
-        
-        # Calculate index based on degrees
-        index = int((degrees + 11.25) / 22.5) % 16
-        return directions[index]
-    
-    def _draw_location_info(self, screen, data: Dict[str, Any]) -> None:
-        """
-        Draw location and update information.
+        Draw status indicator showing data freshness and source.
         
         Args:
             screen: Pygame surface to draw on
-            data: Weather data dictionary
         """
-        # Country info
-        country = data.get('country', '')
-        if country:
-            location_text = f"{data.get('city', '')}, {country}"
-            self.draw_text(screen, location_text, (SCREEN_WIDTH // 2, 55), 
-                          self.font_small, GRAY, center=True)
+        status = self.weather_api.get_status()
+        age = self.weather_api.get_cache_age()
         
-        # Last update time
-        last_updated = data.get('last_updated', 0)
-        if last_updated:
-            import time
-            age_seconds = int(time.time() - last_updated)
-            
-            if age_seconds < 60:
-                age_text = f"Updated {age_seconds}s ago"
-            elif age_seconds < 3600:
-                age_text = f"Updated {age_seconds // 60}m ago"
-            else:
-                age_text = f"Updated {age_seconds // 3600}h ago"
-            
-            self.draw_text(screen, age_text, (SCREEN_WIDTH // 2, 300), 
-                          self.font_small, GRAY, center=True)
-    
-    def _draw_error_state(self, screen, data: Dict[str, Any]) -> None:
-        """
-        Draw error state when weather data is unavailable.
-        
-        Args:
-            screen: Pygame surface to draw on
-            data: Weather data dictionary with error information
-        """
-        # Error message
-        self.draw_text(screen, "Weather Unavailable", (SCREEN_WIDTH // 2, 120), 
-                      self.font_medium, RED, center=True)
-        
-        # Error details
-        error_msg = data.get('error', 'Unknown error')
-        
-        # Truncate long error messages
-        if len(error_msg) > 50:
-            error_msg = error_msg[:47] + "..."
-        
-        self.draw_text(screen, error_msg, (SCREEN_WIDTH // 2, 160), 
-                      self.font_small, RED, center=True)
-        
-        # Helpful messages
-        if 'API key' in error_msg:
-            self.draw_text(screen, "Check API key configuration", (SCREEN_WIDTH // 2, 200), 
-                          self.font_small, GRAY, center=True)
+        # Determine status color and text
+        if status == 'mock':
+            status_color = BLUE
+            status_text = f"🧪 DEMO MODE"
+        elif status == 'success':
+            status_color = GREEN
+            status_text = f"✓ Live ({age:.0f}s ago)"
+        elif status == 'cached':
+            status_color = BLUE
+            status_text = f"⏱ Cached ({age:.0f}s ago)"
         else:
-            self.draw_text(screen, "Check internet connection", (SCREEN_WIDTH // 2, 200), 
-                          self.font_small, GRAY, center=True)
+            status_color = GRAY
+            status_text = f"⚠ {status}"
+        
+        # Draw status in bottom right
+        status_pos = (self.screen_width - 10, self.screen_height - 25)
+        self.draw_text(screen, status_text, FONT_SMALL, status_color,
+                      status_pos, align='right')
     
-    def get_weather_summary(self) -> Dict[str, Any]:
+    def get_screen_name(self) -> str:
         """
-        Get weather data summary.
+        Get display name for this screen.
         
         Returns:
-            Dictionary with weather information summary
+            Screen name string
         """
-        data = self.weather_manager.get_data()
-        
-        return {
-            'temperature': data.get('temperature', 0),
-            'temperature_formatted': data.get('temperature_formatted', '0°C'),
-            'condition': data.get('condition', 'Unknown'),
-            'humidity': data.get('humidity', 0),
-            'wind_speed': data.get('wind_speed', 0),
-            'city': data.get('city', 'Unknown'),
-            'status': data.get('status', 'unknown'),
-            'last_updated': data.get('last_updated', 0),
-            'is_available': data.get('status') in ['success', 'cached']
-        }
-    
-    def force_refresh(self) -> bool:
-        """
-        Force refresh of weather data.
-        
-        Returns:
-            True if refresh was successful, False otherwise
-        """
-        try:
-            data = self.weather_manager.get_data(force_refresh=True)
-            return data.get('status') == 'success'
-        except Exception as e:
-            print(f"Error forcing weather data refresh: {e}")
-            return False 
+        return "Weather" 
