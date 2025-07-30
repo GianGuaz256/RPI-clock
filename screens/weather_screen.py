@@ -136,7 +136,8 @@ class WeatherScreen(BaseScreen):
             screen_height: Height of the screen
         """
         status = self.weather_api.get_status()
-        age = self.weather_api.get_cache_age()
+        cache_info = self.weather_api.get_cache_info()
+        age = cache_info.get('age_seconds', 0)
         
         # Determine status color and text
         if status == 'mock':
