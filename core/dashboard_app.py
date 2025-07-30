@@ -104,20 +104,91 @@ class DashboardApp:
         print("="*50 + "\n")
     
     def _init_pygame(self) -> None:
-        """Initialize Pygame and display."""
+        """Initialize Pygame and display with multiple fallback options."""
+        import os
+        
         pygame.init()
         
-        # Set up display (try fullscreen first, fallback to windowed)
-        try:
-            self.screen = pygame.display.set_mode(
-                (SCREEN_WIDTH, SCREEN_HEIGHT), 
-                pygame.FULLSCREEN
-            )
-            print("Display initialized in fullscreen mode")
-        except pygame.error:
-            # Fallback for development/testing
-            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-            print("Display initialized in windowed mode (fallback)")
+        # Try different initialization approaches
+        initialization_methods = [
+            # Method 1: Try X11 first (most compatible)
+            {
+                'name': 'X11 fullscreen',
+                'env_vars': {'SDL_VIDEODRIVER': 'x11'},
+                'mode': pygame.FULLSCREEN,
+                'description': 'X11 fullscreen mode'
+            },
+            # Method 2: X11 windowed
+            {
+                'name': 'X11 windowed', 
+                'env_vars': {'SDL_VIDEODRIVER': 'x11'},
+                'mode': 0,
+                'description': 'X11 windowed mode'
+            },
+            # Method 3: Framebuffer direct
+            {
+                'name': 'Framebuffer direct',
+                'env_vars': {'SDL_VIDEODRIVER': 'fbcon', 'SDL_FBDEV': '/dev/fb0'},
+                'mode': pygame.FULLSCREEN,
+                'description': 'Direct framebuffer access'
+            },
+            # Method 4: DirectFB
+            {
+                'name': 'DirectFB',
+                'env_vars': {'SDL_VIDEODRIVER': 'directfb'},
+                'mode': pygame.FULLSCREEN,
+                'description': 'DirectFB driver'
+            },
+            # Method 5: Default pygame behavior
+            {
+                'name': 'Default',
+                'env_vars': {},
+                'mode': 0,
+                'description': 'Default pygame initialization'
+            }
+        ]
+        
+        # Store original environment
+        original_env = {}
+        
+        for method in initialization_methods:
+            try:
+                # Set environment variables for this method
+                for key, value in method['env_vars'].items():
+                    if key in os.environ:
+                        original_env[key] = os.environ[key]
+                    os.environ[key] = value
+                
+                # Reinitialize pygame video system for new driver
+                if method['env_vars']:
+                    pygame.display.quit()
+                    pygame.display.init()
+                
+                # Try to create display
+                self.screen = pygame.display.set_mode(
+                    (SCREEN_WIDTH, SCREEN_HEIGHT), 
+                    method['mode']
+                )
+                
+                print(f"Display initialized successfully using {method['description']}")
+                break
+                
+            except pygame.error as e:
+                print(f"Failed to initialize with {method['name']}: {e}")
+                
+                # Restore original environment variables
+                for key in method['env_vars'].keys():
+                    if key in original_env:
+                        os.environ[key] = original_env[key]
+                    elif key in os.environ:
+                        del os.environ[key]
+                
+                # If this was the last method, re-raise the error
+                if method == initialization_methods[-1]:
+                    print("All display initialization methods failed!")
+                    raise
+                
+                continue
         
         pygame.display.set_caption("Raspberry Pi Dashboard")
         pygame.mouse.set_visible(False)  # Hide mouse cursor for touch interface

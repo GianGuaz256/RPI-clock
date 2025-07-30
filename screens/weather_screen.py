@@ -24,7 +24,8 @@ class WeatherScreen(BaseScreen):
     
     def update(self):
         """Update weather data."""
-        self.weather_api.update()
+        # Force refresh weather data
+        self.weather_api.get_data(force_refresh=True)
     
     def draw(self, screen: pygame.Surface):
         """
