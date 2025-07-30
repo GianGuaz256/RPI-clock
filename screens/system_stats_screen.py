@@ -6,7 +6,7 @@ import time
 from typing import Dict, Any
 from screens.base_screen import BaseScreen
 from utils.system_monitor import SystemMonitor
-from utils.constants import WHITE, GREEN, RED, GRAY, SCREEN_WIDTH, SYSTEM_UPDATE_INTERVAL
+from utils.constants import WHITE, GREEN, RED, GRAY, SCREEN_WIDTH, DEFAULT_SYSTEM_UPDATE_INTERVAL
 
 
 class SystemStatsScreen(BaseScreen):
@@ -22,7 +22,7 @@ class SystemStatsScreen(BaseScreen):
         super().__init__(app)
         self.last_system_update = 0
         self.system_stats = {}
-        self.update_interval = SYSTEM_UPDATE_INTERVAL
+        self.update_interval = DEFAULT_SYSTEM_UPDATE_INTERVAL
     
     def update(self) -> None:
         """Update system statistics data."""

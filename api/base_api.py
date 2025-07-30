@@ -6,13 +6,13 @@ import requests
 import time
 from typing import Dict, Any, Optional
 from core.cache import DataCache
-from utils.constants import UPDATE_INTERVAL
+from utils.constants import DEFAULT_UPDATE_INTERVAL
 
 
 class BaseAPIManager:
     """Base class for API managers with common functionality."""
     
-    def __init__(self, cache_key: str, update_interval: int = UPDATE_INTERVAL):
+    def __init__(self, cache_key: str, update_interval: int = DEFAULT_UPDATE_INTERVAL):
         """
         Initialize base API manager.
         
