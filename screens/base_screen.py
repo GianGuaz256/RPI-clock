@@ -86,7 +86,7 @@ class BaseScreen:
             screen.blit(text_surface, pos)
             return pygame.Rect(pos[0], pos[1], text_surface.get_width(), text_surface.get_height())
     
-    def draw_title(self, screen: pygame.Surface, title: str, y_pos: int) -> None:
+    def draw_title(self, screen: pygame.Surface, title: str, y_pos: int, size: int = None) -> None:
         """
         Draw screen title at top of screen.
         
@@ -94,10 +94,18 @@ class BaseScreen:
             screen: Pygame surface to draw on
             title: Title text
             y_pos: Y position for title
+            size: Optional font size (uses medium font by default)
         """
         screen_width = screen.get_width()
+        
+        # Choose font based on size parameter
+        if size is not None:
+            font = pygame.font.Font(None, size)
+        else:
+            font = self.font_medium
+            
         self.draw_text(screen, title, (screen_width // 2, y_pos), 
-                      self.font_medium, WHITE, center=True)
+                      font, WHITE, center=True)
     
     def draw_status_indicator(self, screen: pygame.Surface, status: str, 
                             pos: Tuple[int, int], radius: int = 5) -> None:
